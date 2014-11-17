@@ -1,0 +1,87 @@
+--- old/PKGBUILD
++++ new/PKGBUILD
+@@ -1,53 +1,46 @@
+-# $Id: PKGBUILD 225543 2014-11-02 07:46:27Z thomas $
++# $Id: PKGBUILD 225198 2014-10-22 21:34:38Z thomas $
+ # Maintainer: Tobias Powalowski <tpowa@archlinux.org>
+ # Maintainer: Thomas Baechler <thomas@archlinux.org>
++# Adapted by: Alex Pilon <alp@alexpilon.ca>
+ 
+-pkgbase=linux               # Build stock -ARCH kernel
+-#pkgbase=linux-custom       # Build kernel with a different name
+-_srcname=linux-3.17
+-pkgver=3.17.2
++pkgbase=linux-mainline
++_srcname=linux
++pkgver=3.18.rc3.r82.ged78bb8
+ pkgrel=1
+-arch=('i686' 'x86_64')
++arch=('x86_64')
+ url="http://www.kernel.org/"
+ license=('GPL2')
+ makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc')
+ options=('!strip')
+-source=("https://www.kernel.org/pub/linux/kernel/v3.x/${_srcname}.tar.xz"
+-        "https://www.kernel.org/pub/linux/kernel/v3.x/patch-${pkgver}.xz"
+-        # the main kernel config files
+-        'config' 'config.x86_64'
+-        # standard config files for mkinitcpio ramdisk
++#source=("${_srcname}::git+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
++source=("${_srcname}::git+file://${LINUX_REPO:-$HOME/Documents/Projects/linux/linux}"
++        'config.x86_64'
+         'linux.preset'
+-        'change-default-console-loglevel.patch'
+-        )
+-sha256sums=('f5153ec93c5fcd41b247950e6a9bcbc63fa87beafd112c133a622439a0f76251'
+-            '4576c30a46c016502cdd007d28dde4f2d141c0f8096be8623a9ff519323db777'
+-            '0f1cd431115a2ce84629298d054d5e6f6e78095a3aeda4d1335740c9402efb7e'
+-            'fb688bc7ccfa636990b26aecfe62500bc1e0f6c410a837eef03014c161df2ec8'
++        'change-default-console-loglevel.patch')
++sha256sums=('SKIP'
++            '3dcb8335c1146883bbbc5e2d91f9149aaea1f70be56d3d3eb5aebfa42e2c4b9a'
+             'f0d90e756f14533ee67afda280500511a62465b4f76adcc5effa95a40045179c'
+             '1256b241cd477b265a3c2d64bdc19ffe3c9bbcee82ea3994c590c2c76e767d99')
+-
+ _kernelname=${pkgbase#linux}
+ 
+-prepare() {
++pkgver() (
+   cd "${srcdir}/${_srcname}"
++  set -o pipefail
++  git describe --long \
++    | sed -r 's/^v(.+)-([0-9]+)-g([^-]+)$/\1-r\2-g\3/' \
++    | tr - . \
++    | tr -d '\r\n'
++)
+ 
+-  # add upstream patch
+-  patch -p1 -i "${srcdir}/patch-${pkgver}"
+-
+-  # add latest fixes from stable queue, if needed
+-  # http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
++prepare() {
++  cd "${srcdir}/${_srcname}"
+ 
+   # set DEFAULT_CONSOLE_LOGLEVEL to 4 (same value as the 'quiet' kernel param)
+   # remove this when a Kconfig knob is made available by upstream
+   # (relevant patch sent upstream: https://lkml.org/lkml/2011/7/26/227)
+   patch -p1 -i "${srcdir}/change-default-console-loglevel.patch"
+ 
+-  if [ "${CARCH}" = "x86_64" ]; then
+-    cat "${srcdir}/config.x86_64" > ./.config
+-  else
+-    cat "${srcdir}/config" > ./.config
+-  fi
++  cp "${srcdir}/config.x86_64" ./.config
+ 
+   if [ "${_kernelname}" != "" ]; then
+     sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"${_kernelname}\"|g" ./.config
+@@ -142,7 +135,7 @@
+   mv "${pkgdir}/lib" "${pkgdir}/usr/"
+ 
+   # add vmlinux
+-  install -D -m644 vmlinux "${pkgdir}/usr/lib/modules/${_kernver}/build/vmlinux" 
++  install -D -m644 vmlinux "${pkgdir}/usr/lib/modules/${_kernver}/build/vmlinux"
+ }
+ 
+ _package-headers() {

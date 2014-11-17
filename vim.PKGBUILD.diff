@@ -1,0 +1,44 @@
+--- old/PKGBUILD
++++ new/PKGBUILD
+@@ -14,7 +14,7 @@
+ arch=('i686' 'x86_64')
+ license=('custom:vim')
+ url="http://www.vim.org"
+-makedepends=('gpm' 'python2' 'python' 'ruby' 'libxt' 'desktop-file-utils' 'gtk2' 'lua')
++makedepends=('gpm' 'libxt' 'desktop-file-utils' 'gtk2')
+ source=("ftp://ftp.archlinux.org/other/vim/vim-${pkgver}.tar.xz"
+         "ftp://ftp.archlinux.org/other/vim/vim-${pkgver}.tar.xz.sig"
+         'vimrc'
+@@ -144,17 +144,17 @@
+     --with-features=huge \
+     --with-compiledby='Arch Linux' \
+     --enable-gpm \
+-    --enable-acl \
++    --disable-acl \
+     --with-x=yes \
+     --enable-gui=gtk2 \
+     --enable-multibyte \
+     --enable-cscope \
+     --enable-netbeans \
+     --enable-perlinterp \
+-    --enable-pythoninterp \
++    --disable-pythoninterp \
+     --disable-python3interp \
+-    --enable-rubyinterp \
+-    --enable-luainterp
++    --disable-rubyinterp \
++    --disable-luainterp
+ 
+   make
+ 
+@@ -278,8 +278,8 @@
+ 
+ package_gvim() {
+   pkgdesc='Vi Improved, a highly configurable, improved version of the vi text editor (with advanced features, such as a GUI)'
+-  depends=("vim-runtime=${pkgver}-${pkgrel}" 'gpm' 'ruby' 'libxt'
+-           'desktop-file-utils' 'gtk2' 'lua' 'python2')
++  depends=("vim-runtime=${pkgver}-${pkgrel}" 'gpm' 'libxt'
++           'desktop-file-utils' 'gtk2')
+   provides=("vim=${pkgver}-${pkgrel}")
+   conflicts=('vim-minimal' 'vim' 'vim-python3' 'gvim-python3')
+   install=gvim.install

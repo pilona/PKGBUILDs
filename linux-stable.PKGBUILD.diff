@@ -1,0 +1,145 @@
+--- old/PKGBUILD
++++ new/PKGBUILD
+@@ -1,53 +1,70 @@
+-# $Id: PKGBUILD 225543 2014-11-02 07:46:27Z thomas $
++# $Id: PKGBUILD 225198 2014-10-22 21:34:38Z thomas $
+ # Maintainer: Tobias Powalowski <tpowa@archlinux.org>
+ # Maintainer: Thomas Baechler <thomas@archlinux.org>
++# Adapted by: Alex Pilon <alp@alexpilon.ca>
+ 
+-pkgbase=linux               # Build stock -ARCH kernel
+-#pkgbase=linux-custom       # Build kernel with a different name
+-_srcname=linux-3.17
+-pkgver=3.17.2
++pkgbase=linux-stable
++_srcname=linux
++_major=3.17
++pkgver=3.17.2.r70.g3c280e1
+ pkgrel=1
+-arch=('i686' 'x86_64')
++arch=('x86_64')
+ url="http://www.kernel.org/"
+ license=('GPL2')
+ makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc')
+ options=('!strip')
+-source=("https://www.kernel.org/pub/linux/kernel/v3.x/${_srcname}.tar.xz"
+-        "https://www.kernel.org/pub/linux/kernel/v3.x/patch-${pkgver}.xz"
+-        # the main kernel config files
+-        'config' 'config.x86_64'
+-        # standard config files for mkinitcpio ramdisk
++#source=("${_srcname}::git+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git#tag=v${_major}"
++#        "${_srcname}-stable::git+https://git.kernel.org/pub/scm/linux/kernel/git/stable/stable-queue.git"
++source=("${_srcname}::git+file://${LINUX_REPO:-$HOME/Documents/Projects/linux/linux#tag=v${_major}}"
++        "${_srcname}-stable::git+file://${STABLE_REPO:-$HOME/Documents/Projects/linux/stable-queue}"
++        'config.x86_64'
+         'linux.preset'
+-        'change-default-console-loglevel.patch'
+-        )
+-sha256sums=('f5153ec93c5fcd41b247950e6a9bcbc63fa87beafd112c133a622439a0f76251'
+-            '4576c30a46c016502cdd007d28dde4f2d141c0f8096be8623a9ff519323db777'
+-            '0f1cd431115a2ce84629298d054d5e6f6e78095a3aeda4d1335740c9402efb7e'
+-            'fb688bc7ccfa636990b26aecfe62500bc1e0f6c410a837eef03014c161df2ec8'
++        'change-default-console-loglevel.patch')
++sha256sums=('SKIP'
++            'SKIP'
++            '8031503649d47819a9fe18bde6aad4ebdfacdf959b1dd06a46a5a4944541e675'
+             'f0d90e756f14533ee67afda280500511a62465b4f76adcc5effa95a40045179c'
+             '1256b241cd477b265a3c2d64bdc19ffe3c9bbcee82ea3994c590c2c76e767d99')
+-
+ _kernelname=${pkgbase#linux}
+ 
++_listminors() (
++  cd "${srcdir}/${_srcname}-stable/releases"
++
++  minor=${_major}.0
++  for minor in ${_major}.*; do
++    echo "$minor"
++  done | sort -t . -n
++)
++
++pkgver() {
++  cd "${srcdir}/${_srcname}-stable"
++  printf "%s.r%d.g%s" \
++         "$(_listminors | tail -1)" \
++         "$(wc -l < queue-${_major}/series)" \
++         "$(git rev-parse --short HEAD)"
++}
++
+ prepare() {
+   cd "${srcdir}/${_srcname}"
+ 
+-  # add upstream patch
+-  patch -p1 -i "${srcdir}/patch-${pkgver}"
++  # Add stable releases
++  for release in $(_listminors); do
++    while read line; do
++      patch -Np1 -i "${srcdir}/${_srcname}-stable/releases/${release}/${line}"
++    done < "${srcdir}/${_srcname}-stable/releases/${release}/series"
++  done
+ 
+-  # add latest fixes from stable queue, if needed
+-  # http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
++  # Add stable queue
++  while read line; do
++    patch -Np1 -i "${srcdir}/${_srcname}-stable/queue-${_major}/${line}"
++  done < "${srcdir}/${_srcname}-stable/queue-${_major}/series"
+ 
+   # set DEFAULT_CONSOLE_LOGLEVEL to 4 (same value as the 'quiet' kernel param)
+   # remove this when a Kconfig knob is made available by upstream
+   # (relevant patch sent upstream: https://lkml.org/lkml/2011/7/26/227)
+   patch -p1 -i "${srcdir}/change-default-console-loglevel.patch"
+ 
+-  if [ "${CARCH}" = "x86_64" ]; then
+-    cat "${srcdir}/config.x86_64" > ./.config
+-  else
+-    cat "${srcdir}/config" > ./.config
+-  fi
++  cp "${srcdir}/config.x86_64" ./.config
+ 
+   if [ "${_kernelname}" != "" ]; then
+     sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"${_kernelname}\"|g" ./.config
+@@ -86,9 +103,9 @@
+   [ "${pkgbase}" = "linux" ] && groups=('base')
+   depends=('coreutils' 'linux-firmware' 'kmod' 'mkinitcpio>=0.7')
+   optdepends=('crda: to set the correct wireless channels of your country')
+-  provides=("kernel26${_kernelname}=${pkgver}")
+-  conflicts=("kernel26${_kernelname}")
+-  replaces=("kernel26${_kernelname}")
++  provides=("kernel26=${pkgver}" "linux=${pkgver}")
++  conflicts=("kernel26")
++  replaces=("kernel26")
+   backup=("etc/mkinitcpio.d/${pkgbase}.preset")
+   install=linux.install
+ 
+@@ -142,14 +159,14 @@
+   mv "${pkgdir}/lib" "${pkgdir}/usr/"
+ 
+   # add vmlinux
+-  install -D -m644 vmlinux "${pkgdir}/usr/lib/modules/${_kernver}/build/vmlinux" 
++  install -D -m644 vmlinux "${pkgdir}/usr/lib/modules/${_kernver}/build/vmlinux"
+ }
+ 
+ _package-headers() {
+   pkgdesc="Header files and scripts for building modules for ${pkgbase/linux/Linux} kernel"
+-  provides=("kernel26${_kernelname}-headers=${pkgver}")
+-  conflicts=("kernel26${_kernelname}-headers")
+-  replaces=("kernel26${_kernelname}-headers")
++  provides=("kernel26-headers=${pkgver}" "linux=${pkgver}")
++  conflicts=("kernel26-headers")
++  replaces=("kernel26-headers")
+ 
+   install -dm755 "${pkgdir}/usr/lib/modules/${_kernver}"
+ 
+@@ -267,9 +284,9 @@
+ 
+ _package-docs() {
+   pkgdesc="Kernel hackers manual - HTML documentation that comes with the ${pkgbase/linux/Linux} kernel"
+-  provides=("kernel26${_kernelname}-docs=${pkgver}")
+-  conflicts=("kernel26${_kernelname}-docs")
+-  replaces=("kernel26${_kernelname}-docs")
++  provides=("kernel26-docs=${pkgver}" "linux=${pkgver}")
++  conflicts=("kernel26-docs")
++  replaces=("kernel26-docs")
+ 
+   cd "${srcdir}/${_srcname}"
+ 

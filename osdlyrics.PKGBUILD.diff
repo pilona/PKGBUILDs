@@ -1,0 +1,26 @@
+--- old/PKGBUILD
++++ new/PKGBUILD
+@@ -9,8 +9,8 @@
+ arch=('i686' 'x86_64')
+ url="http://code.google.com/p/osd-lyrics/"
+ license=('GPL3')
+-depends=('gtk2' 'dbus-glib' 'curl' 'libnotify' 'libmpd' 'xmms2'
+-         'desktop-file-utils' 'hicolor-icon-theme')
++depends=('gtk2' 'dbus-glib' 'curl' 'libnotify' 'desktop-file-utils'
++         'hicolor-icon-theme')
+ makedepends=('intltool')
+ install=$pkgname.install
+ source=("http://osd-lyrics.googlecode.com/files/$pkgname-$pkgver.tar.gz")
+@@ -20,7 +20,11 @@
+ {
+     cd "$srcdir/$pkgname-$pkgver"
+ 
+-    ./configure --prefix=/usr
++    ./configure --prefix=/usr \
++                --disable-mpd \
++                --disable-xmms2 \
++                --disable-amarok1 \
++
+     make
+ }
+ 
