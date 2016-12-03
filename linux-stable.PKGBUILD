@@ -44,7 +44,7 @@ pkgver() {
   local _minor=$(shopt -s nullglob
                  for ver in releases/${_major}.*; do
                    echo $ver
-                 done | sort -n -t . | tail -1 | cut -d / -f 2-)
+                 done | sort -V | tail -1 | cut -d / -f 2-)
   if [ -z "$_minor" ]; then
     local _minor=${_major}.0
   fi
@@ -70,12 +70,16 @@ prepare() {
 
   # Add stable releases
   if [ -e "${srcdir}/stable-queue/releases/${_major}.1" ]; then
-    for release in ${srcdir}/stable-queue/releases/${_major}.*; do
-      local release=$(basename $release)
-      while read line; do
-        patch -Np1 -i "${srcdir}/stable-queue/releases/${release}/${line}"
-      done < "${srcdir}/stable-queue/releases/${release}/series"
-    done
+    find ${srcdir}/stable-queue/releases \
+         -type d \
+         -name "${_major}.*" \
+      | sort -V \
+      | while read release; do
+          local release=$(basename $release)
+          while read line; do
+            patch -Np1 -i "${srcdir}/stable-queue/releases/${release}/${line}"
+          done < "${srcdir}/stable-queue/releases/${release}/series"
+        done
   fi
   # Add stable queue
   if [ -e "${srcdir}/stable-queue/queue-${_major}/series" ]; then
