@@ -73,14 +73,16 @@ prepare() {
     for release in ${srcdir}/stable-queue/releases/${_major}.*; do
       local release=$(basename $release)
       while read line; do
-        patch -Np1 -i "${srcdir}/stable-queue/releases/${release}/${line}"
+        patch="${srcdir}/stable-queue/releases/${release}/${line}"
+        [ -e "$patch" ] && patch -Np1 -i "$patch"
       done < "${srcdir}/stable-queue/releases/${release}/series"
     done
   fi
   # Add stable queue
   if [ -e "${srcdir}/stable-queue/queue-${_major}/series" ]; then
     while read line; do
-      patch -Np1 -i "${srcdir}/stable-queue/queue-${_major}/${line}"
+      patch="${srcdir}/stable-queue/queue-${_major}/${line}"
+      [ -e "$patch" ] && patch -Np1 -i "$patch"
     done < "${srcdir}/stable-queue/queue-${_major}/series"
   fi
 
