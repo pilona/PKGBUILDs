@@ -4,7 +4,7 @@
 # Adapted by: Alex Pilon <alp@alexpilon.ca>
 
 _srcname=linux
-_major=4.4
+_major=4.7
 pkgbase=linux-stable-${_major}
 pkgver=4.4.6.6.d841db0
 pkgrel=1
@@ -321,7 +321,6 @@ _package-docs() {
 }
 
 pkgname=("${pkgbase}" "${pkgbase}-headers" "${pkgbase}-docs")
-#set -x
 for _p in ${pkgname[@]}; do
   eval "package_${_p}() {
     $(declare -f "_package${_p#${pkgbase}}")
