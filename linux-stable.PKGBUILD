@@ -5,8 +5,8 @@
 
 pkgbase=linux-stable
 _srcname=linux
-_major=4.13
-pkgver=4.7.10.0.295b01a
+_major=4.17
+pkgver=4.14.20.151.dfbc6f9b7
 pkgrel=1
 arch=('i686' 'x86_64')
 url="https://www.kernel.org/"
@@ -69,6 +69,8 @@ pkgver() {
 prepare() {
   cd "${srcdir}/${_srcname}"
 
+  git config commit.gpgSign false
+
   # Add stable releases
   if [ -e "${srcdir}/stable-queue/releases/${_major}.1" ]; then
     find ${srcdir}/stable-queue/releases \
@@ -80,7 +82,7 @@ prepare() {
           while read line; do
             patch="${srcdir}/stable-queue/releases/${release}/${line}"
             if [ -e "$patch" ]; then
-              patch -Np1 -i "$patch"
+              git am "$patch" || git am --skip
             fi
           done < "${srcdir}/stable-queue/releases/${release}/series"
         done
@@ -90,7 +92,7 @@ prepare() {
     while read line; do
       patch="${srcdir}/stable-queue/queue-${_major}/${line}"
       if [ -e "$patch" ]; then
-        patch -Np1 -i "$patch"
+        git am "$patch" || git am --skip
       fi
     done < "${srcdir}/stable-queue/queue-${_major}/series"
   fi
